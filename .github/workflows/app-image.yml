@@ -38,6 +38,7 @@ jobs:
 
       - name: build libheif and libde265
         run: |
+          set -e
           apt-get build-dep -y imagemagick libde265 libheif
           cd /usr/src/ 
           git clone https://github.com/strukturag/libde265.git 
