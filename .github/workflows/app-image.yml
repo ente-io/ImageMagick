@@ -1,10 +1,10 @@
 on:
   workflow_dispatch:
   schedule:
-  - cron: 0 6 * * *
+    - cron: 0 6 * * *
   push:
     tags:
-    - '*'
+      - "*"
 
 permissions:
   contents: write
@@ -12,7 +12,7 @@ permissions:
 name: app image
 jobs:
   build:
-    name: 'Create AppImage'
+    name: "Create AppImage"
     runs-on: ubuntu-latest
     container:
       image: ubuntu:18.04
@@ -20,7 +20,7 @@ jobs:
 
     strategy:
       matrix:
-        compiler: [ gcc, clang ]
+        compiler: [gcc, clang]
         include:
           - compiler: gcc
             cxx_compiler: g++
@@ -28,74 +28,91 @@ jobs:
             cxx_compiler: clang++
 
     steps:
+      - name: Install dependencies
+        run: |
+          set -e
+          apt-get update -y
+          apt-get install -y autoconf build-essential curl fuse git kmod libbz2-dev libdjvulibre-dev libfontconfig-dev libfreetype6-dev libfribidi-dev libharfbuzz-dev liblcms-dev libopenexr-dev libturbojpeg0-dev liblqr-dev libraqm-dev libtiff-dev libwebp-dev libx11-dev libxml2-dev liblzma-dev software-properties-common wget
+          add-apt-repository ppa:git-core/ppa -y
+          apt-get install -y git
 
-    - name: Install dependencies
-      run: |
-        set -e
-        apt-get update -y
-        apt-get install -y autoconf curl fuse git kmod libbz2-dev libdjvulibre-dev libfontconfig-dev libfreetype6-dev libfribidi-dev libharfbuzz-dev liblcms-dev libopenexr-dev libturbojpeg0-dev liblqr-dev libraqm-dev libtiff-dev libwebp-dev libx11-dev libxml2-dev liblzma-dev software-properties-common wget
-        add-apt-repository ppa:git-core/ppa -y
-        apt-get install -y git
+      - name: build libheif and libde265
+        run: |
+          sed -Ei 's/^# deb-src /deb-src /' /etc/apt/sources.list
+          apt-get build-dep -y imagemagick libde265 libheif
+          cd /usr/src/ 
+          git clone https://github.com/strukturag/libde265.git 
+          git clone https://github.com/strukturag/libheif.git 
+          cd libde265/ 
+          ./autogen.sh 
+          ./configure 
+          make -j4 
+          make install 
+          cd /usr/src/libheif/ 
+          ./autogen.sh 
+          ./configure 
+          make -j4  
+          make install
 
-    - name: Checkout
-      uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v3
 
-    - name: Install ${{ matrix.compiler }}
-      if: matrix.compiler == 'clang'
-      run: apt-get install -y ${{ matrix.compiler }}
+      - name: Install ${{ matrix.compiler }}
+        if: matrix.compiler == 'clang'
+        run: apt-get install -y ${{ matrix.compiler }}
 
-    - name: Download AppImage
-      run: |
-        mkdir /app-image
-        cd /app-image
-        wget -c "https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage"
-        chmod a+x linuxdeployqt-continuous-x86_64.AppImage
-        ./linuxdeployqt-continuous-x86_64.AppImage --appimage-extract
+      - name: Download AppImage
+        run: |
+          mkdir /app-image
+          cd /app-image
+          wget -c "https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage"
+          chmod a+x linuxdeployqt-continuous-x86_64.AppImage
+          ./linuxdeployqt-continuous-x86_64.AppImage --appimage-extract
 
-    - name: Build ImageMagick
-      env:
-        CFLAGS: -Wno-deprecated-declarations -Wdeclaration-after-statement -Wno-error=unused-variable
-        CC: ${{ matrix.compiler }}
-        CXX: ${{ matrix.cxx_compiler }}
-      run: |
-        set -e
-        ./configure --with-quantum-depth=16 --without-magick-plus-plus --without-perl --prefix=/usr
-        make
-        make install DESTDIR=$(readlink -f /appdir)
+      - name: Build ImageMagick
+        env:
+          CFLAGS: -Wno-deprecated-declarations -Wdeclaration-after-statement -Wno-error=unused-variable
+          CC: ${{ matrix.compiler }}
+          CXX: ${{ matrix.cxx_compiler }}
+        run: |
+          set -e
+          ./configure --with-quantum-depth=16 --without-magick-plus-plus --without-perl --prefix=/usr --with-heic
+          make
+          make install DESTDIR=$(readlink -f /appdir)
 
-    - name: Create ImageMagick AppImage
-      run: |
-        set -e
-        mkdir -p /appdir/usr/share/applications/
-        cp ./app-image/imagemagick.desktop /appdir/usr/share/applications/
-        mkdir -p /appdir/usr/share/icons/hicolor/128x128/apps/
-        cp ./app-image/icon.png /appdir/usr/share/icons/hicolor/128x128/apps/imagemagick.png
-        unset QTDIR
-        unset QT_PLUGIN_PATH
-        unset LD_LIBRARY_PATH
-        export VERSION=$(git rev-parse --short HEAD)-${{ matrix.compiler }}
-        /app-image/linuxdeployqt-continuous-x86_64.AppImage /appdir/usr/share/applications/imagemagick.desktop -bundle-non-qt-libs
-        rm /appdir/AppRun
-        cp ./app-image/AppRun /appdir
-        chmod a+x /appdir/AppRun
-        PATH=/app-image/squashfs-root/usr/bin:$PATH
-        /app-image/squashfs-root/usr/bin/appimagetool -g /appdir/
-        mkdir artifacts
-        cp ImageMagick-$VERSION-x86_64.AppImage artifacts
-        find /appdir -executable -type f -exec ldd {} \; | grep " => /usr" | cut -d " " -f 2-3 | sort | uniq
+      - name: Create ImageMagick AppImage
+        run: |
+          set -e
+          mkdir -p /appdir/usr/share/applications/
+          cp ./app-image/imagemagick.desktop /appdir/usr/share/applications/
+          mkdir -p /appdir/usr/share/icons/hicolor/128x128/apps/
+          cp ./app-image/icon.png /appdir/usr/share/icons/hicolor/128x128/apps/imagemagick.png
+          unset QTDIR
+          unset QT_PLUGIN_PATH
+          unset LD_LIBRARY_PATH
+          export VERSION=$(git rev-parse --short HEAD)-${{ matrix.compiler }}
+          /app-image/linuxdeployqt-continuous-x86_64.AppImage /appdir/usr/share/applications/imagemagick.desktop -bundle-non-qt-libs
+          rm /appdir/AppRun
+          cp ./app-image/AppRun /appdir
+          chmod a+x /appdir/AppRun
+          PATH=/app-image/squashfs-root/usr/bin:$PATH
+          /app-image/squashfs-root/usr/bin/appimagetool -g /appdir/
+          mkdir artifacts
+          cp ImageMagick-$VERSION-x86_64.AppImage artifacts
+          find /appdir -executable -type f -exec ldd {} \; | grep " => /usr" | cut -d " " -f 2-3 | sort | uniq
 
-    - name: Create release
-      if: contains(github.ref, 'tags')
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        set -e
-        wget -c https://github.com/probonopd/uploadtool/raw/master/upload.sh
-        bash ./upload.sh ImageMagick*AppImage*
+      - name: Create release
+        if: contains(github.ref, 'tags')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          wget -c https://github.com/probonopd/uploadtool/raw/master/upload.sh
+          bash ./upload.sh ImageMagick*AppImage*
 
-    - name: Upload ImageMagick AppImage
-      if: "!contains(github.ref, 'tags')"
-      uses: actions/upload-artifact@v3
-      with:
-        name: AppImage-${{ matrix.compiler }}
-        path: artifacts
+      - name: Upload ImageMagick AppImage
+        if: "!contains(github.ref, 'tags')"
+        uses: actions/upload-artifact@v3
+        with:
+          name: AppImage-${{ matrix.compiler }}
+          path: artifacts
