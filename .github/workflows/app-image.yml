@@ -68,11 +68,6 @@ jobs:
         if: matrix.compiler == 'clang'
         run: apt-get install -y ${{ matrix.compiler }}
 
-      - name: setting up LD_LIBRARY_PATH
-        run: |
-          export LD_LIBRARY_PATH="/usr/src:$LD_LIBRARY_PATH"
-          echo $LD_LIBRARY_PATH
-
       - name: Download AppImage
         run: |
           mkdir /app-image
@@ -95,6 +90,7 @@ jobs:
       - name: Create ImageMagick AppImage
         run: |
           set -e
+          export LD_LIBRARY_PATH="/usr/local/lib:$LD_LIBRARY_PATH"
           echo $LD_LIBRARY_PATH
           mkdir -p /appdir/usr/share/applications/
           cp ./app-image/imagemagick.desktop /appdir/usr/share/applications/
