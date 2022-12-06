@@ -37,6 +37,7 @@ jobs:
           apt-get install -y autoconf build-essential curl fuse git kmod libbz2-dev libdjvulibre-dev libfontconfig-dev libfreetype6-dev libfribidi-dev libharfbuzz-dev liblcms-dev libopenexr-dev libturbojpeg0-dev liblqr-dev libraqm-dev libtiff-dev libwebp-dev libx11-dev libxml2-dev liblzma-dev software-properties-common wget
           add-apt-repository ppa:git-core/ppa -y
           apt-get install -y git
+          apt-get build-dep -y imagemagick libde265 libheif
 
       - name: build libde265
         run: |
