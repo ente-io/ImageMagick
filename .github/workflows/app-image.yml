@@ -47,11 +47,13 @@ jobs:
           git clone https://github.com/strukturag/libde265.git 
           git clone https://github.com/strukturag/libheif.git 
           cd libde265/ 
+          git checkout v1.0.9
           ./autogen.sh 
           ./configure 
           make -j4 
           make install 
           cd /usr/src/libheif/ 
+          git checkout v1.14.0
           ./autogen.sh 
           ./configure 
           make -j4  
