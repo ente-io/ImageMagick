@@ -1,13 +1,13 @@
 on:
   workflow_dispatch:
-  schedule:
+  xx-schedule:
   - cron: 0 6 * * *
-  push:
+  xx-push:
     branches:
     - main
     paths:
     - '.github/workflows/daily.yml'
-  pull_request:
+  xx-pull_request:
     branches:
     - main
     paths:

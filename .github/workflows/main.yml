@@ -1,10 +1,10 @@
 on:
-  push:
+  xx-push:
     branches:
     - main
     tags:
     - '!*'
-  pull_request:
+  xx-pull_request:
     branches:
     - main
 

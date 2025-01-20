@@ -1,13 +1,13 @@
 on:
   workflow_dispatch:
-  push:
+  xx-push:
     branches:
     - main
     paths:
     - 'configure'
     - 'm4/version.m4'
     - '.github/workflows/windows-release.yml'
-  pull_request:
+  xx-pull_request:
     branches:
     - main
     paths:
