@@ -1,17 +1,17 @@
 on:
   workflow_dispatch:
-  schedule:
-  - cron: 0 6 * * *
-  push:
-    branches:
-    - main
-    paths:
-    - '.github/workflows/daily.yml'
-  pull_request:
-    branches:
-    - main
-    paths:
-    - '.github/workflows/daily.yml'
+  # schedule:
+  # - cron: 0 6 * * *
+  # push:
+  #   branches:
+  #   - main
+  #   paths:
+  #   - '.github/workflows/daily.yml'
+  # pull_request:
+  #   branches:
+  #   - main
+  #   paths:
+  #   - '.github/workflows/daily.yml'
 
 name: daily
 jobs:
